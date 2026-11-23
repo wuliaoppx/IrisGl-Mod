@@ -39,6 +39,11 @@
 - 仅 Minecraft 1.21.1 + NeoForge 21.1.265 + Iris 1.8.x + Sodium 0.8.x，其它版本未验证。
 - 光影包兼容性按通道推进，不是“任何包都能跑”。
 
+## 下载
+
+编译好的 jar 在 [Releases](https://github.com/wuliaoppx/IrisGl-Mod/releases) 页面（`antimony-<version>.jar`），
+或按下面的步骤自行构建。
+
 ## 构建
 
 需要：
