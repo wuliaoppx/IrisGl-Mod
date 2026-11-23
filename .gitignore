@@ -1,0 +1,52 @@
+# ---- 构建产物 ----
+/build/
+/gradle/
+/.gradle/
+/antimony-post-gen/
+*.class
+*.jar
+
+# ---- 运行与验证数据（存档、日志、截图、第三方模组、光影包）----
+/run/
+/crash-report/
+/logs/
+/ref/
+/pack-src/
+
+# ---- 本地依赖：第三方二进制不入库，构建前自行放置 ----
+/libs/*.jar
+
+# ---- 本地抓取的 shader 源（来自游戏运行时，随版本变化）----
+/captures/
+
+# ---- 开发脚本与草稿（依赖本机实例路径）----
+/run-game.ps1
+/run-instance.ps1
+/probe_*.py
+/assemble_review.py
+run-*.txt
+smoke-debug.txt
+build*.log
+launch-overview.log
+hs_err_pid*.log
+replay_pid*.log
+
+# ---- 内部实现与验证记录（含本机路径、运行 ID、逐轮证据，不入库）----
+/HANDOFF.md
+/docs/analysis/
+/docs/review/
+/docs/CODE-REVIEW.md
+/docs/GL-COMPAT-PLAN.md
+/docs/ARCHITECTURE-CONTRACT.md
+
+# ---- IDE / 系统 ----
+/.idea/
+/.vscode/
+*.iml
+*.log
+Thumbs.db
+desktop.ini
+
+# ---- 本地素材（未压缩原图，仓库使用 docs/images 下的发布图）----
+/图标.png
+/图标无背景.png

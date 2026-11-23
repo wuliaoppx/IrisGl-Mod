@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.antimony.gl.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "GlStateManagerProbeMixin",
+    "NativeImageUploadMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/wuliaoppx/IrisGl-Mod/issues"
+
+[[mods]]
+modId = "antimony"
+version = "${file.jarVersion}"
+displayName = "Antimony"
+logoFile = "antimony_logo.png"
+authors = "Antimony"
+description = '''Antimony (Sb, element 51). Replaces Minecraft's OpenGL renderer with a pure-CPU SGI IRIS GL style software rasterizer. Negative-optimization joke mod.'''
+
+[[dependencies.antimony]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.antimony]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.21.2)"
+ordering = "NONE"
+side = "CLIENT"

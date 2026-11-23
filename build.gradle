@@ -1,0 +1,291 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = project.modVersion
+group = 'dev.antimony'
+base { archivesName = 'antimony' }
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+}
+
+neoForge {
+    version = project.neoForgeVersion
+    validateAccessTransformers = false
+
+    runs {
+        client {
+            client()
+            gameDirectory = file('run')
+        }
+    }
+
+    mods {
+        antimony {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Sodium 的配置 API 只用于把本模组的画质选项注册进 Sodium 设置页。
+// Sodium 是第三方模组，二进制不随本仓库分发；构建前请从你自己的实例里取出：
+//   unzip -o "<实例>/mods/sodium-*.jar" 'net/caffeinemc/mods/sodium/api/*' \
+//         'net/caffeinemc/mods/sodium/client/config/*' -d /tmp/sodium-api
+//   jar cf libs/sodium-api.jar -C /tmp/sodium-api .
+// 或者直接用 -PsodiumApiJar=<路径> 指向现成的 jar。
+def sodiumApiJar = file(providers.gradleProperty('sodiumApiJar').getOrElse("$rootDir/libs/sodium-api.jar"))
+if (!sodiumApiJar.exists()) {
+    throw new GradleException("""
+        缺少 Sodium 配置 API 的编译期 jar: ${sodiumApiJar}
+        Sodium 是第三方模组，本仓库不分发它的二进制。请从已安装的 Sodium 中提取
+        net/caffeinemc/mods/sodium 下的类，打包成该文件；或用
+        -PsodiumApiJar=<你的路径> 指定。该依赖仅 compileOnly，不会进最终模组 jar。
+        """.stripIndent())
+}
+
+dependencies {
+    // JNA 5.14.0 已包含在 Minecraft 运行时依赖里，这里只需要核心构件
+    // （Win32 绑定在 dev.antimony.core.win32 中手写声明）。
+    compileOnly 'net.java.dev.jna:jna:5.14.0'
+    // Sodium 只提供编译期符号；运行时由实例里的真实 Sodium 提供，
+    // 未安装 Sodium 时相关类永不加载。
+    compileOnly files(sodiumApiJar)
+}
+
+// ---------------------------------------------------------------------------
+// 数值回归探针：全部为纯 CPU 断言，不需要启动游戏。
+// 少数需要“从游戏运行时抓下来的 shader 源”的探针，用 -Pcaptures=<目录> 指定。
+// 默认 captures/ 不入库，见 .gitignore。
+// ---------------------------------------------------------------------------
+def captures = providers.gradleProperty('captures').getOrElse("$rootDir/captures")
+
+['Default': null, 'On': 'on', 'Report': 'report', 'Off': 'off'].each { label, override ->
+    tasks.register("glCompat${label}Probe", JavaExec) {
+        classpath = sourceSets.main.runtimeClasspath
+        mainClass = 'dev.antimony.gl.GlCompatModeProbe'
+        args = [override == null ? 'ON' : override.toUpperCase(java.util.Locale.ROOT), override == null ? 'default' : 'explicit']
+        if (override != null) systemProperty 'antimony.glcompat', override
+    }
+}
+
+tasks.register('blockEntityInputsProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.BlockEntityInputsProbe'
+    args = ["$captures/block-entity"]
+}
+
+tasks.register('prepareCoverageProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.PrepareCoverageProbe'
+}
+
+tasks.register('cpuFinalOutputProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.CpuFinalOutputProbe'
+}
+
+tasks.register('postVertexSamplerProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.PostVertexSamplerProbe'
+}
+
+tasks.register('scalarSamplerProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.ScalarSamplerProbe'
+}
+
+tasks.register('guiDepthClearProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.GuiDepthClearProbe'
+}
+
+tasks.register('cpuMapUpdateBudgetProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.CpuMapUpdateBudgetProbe'
+}
+
+tasks.register('cpuDynamicTextureProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.CpuDynamicTextureProbe'
+}
+
+tasks.register('renderQualityProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.RenderQualityProbe'
+}
+
+tasks.register('glslTextureLodProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.GlslTextureLodProbe'
+    args = ["$captures/terrain"]
+}
+
+tasks.register('glslShadowSamplerProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.GlslShadowSamplerProbe'
+}
+
+tasks.register('irisPostPipelineIsolationProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.IrisPostPipelineIsolationProbe'
+}
+
+tasks.register('startupProgressProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.win32.StartupProgressProbe'
+}
+
+tasks.register('sectionUpdateQueueProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.SectionUpdateQueueProbe'
+}
+
+tasks.register('cpuScreenImageProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.present.CpuScreenImageProbe'
+}
+
+tasks.register('sectionDirtyRangeProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.SectionDirtyRangeProbe'
+}
+
+tasks.register('terrainBlendProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.TerrainBlendProbe'
+}
+
+tasks.register('glslReferenceProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.GlslReferenceProbe'
+    maxHeapSize = '512m'
+}
+
+tasks.register('cpuShadowBindingsProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.CpuShadowBindingsProbe'
+}
+
+tasks.register('win32PresenterProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.present.Win32PresenterProbe'
+    systemProperty 'antimony.presenter.probe.modal', 'true'
+}
+
+tasks.register('cpuImageResourcesProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.IrisCpuImageResourcesProbe'
+}
+
+tasks.register('solasVoxelMappingProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.render.SolasVoxelMappingProbe'
+}
+
+tasks.register('solasShadowSourceProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.SolasShadowSourceProbe'
+    args = ["$captures/shadow_terrain_cutout.vsh"]
+}
+
+tasks.register('solasShadowVertexABProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.SolasShadowVertexABProbe'
+    args = [providers.gradleProperty('shadowAbBaseline').getOrElse("$rootDir/libs/baseline-antimony.jar"),
+            providers.gradleProperty('shadowAbSource').getOrElse("$captures/shadow_terrain_cutout.vsh"),
+            providers.gradleProperty('shadowAbOutput').getOrElse("${layout.buildDirectory.get().asFile}/probe-output/shadow-ab-${System.currentTimeMillis()}")]
+    maxHeapSize = '768m'
+}
+
+tasks.register('terrainVoxelAttributesProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.test.TerrainVoxelAttributesProbe'
+}
+
+tasks.register('cpuComputeProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.CpuComputeProbe'
+    args = ["$captures/shadowcomp-compute.glsl"]
+    maxHeapSize = '3g'
+}
+
+tasks.register('terrainFragmentRasterProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.irisgl.TerrainFragmentRasterProbe'
+}
+
+tasks.register('rasterCullingProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.irisgl.RasterCullingProbe'
+}
+
+tasks.register('shaderVaryingAccessProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.ShaderVaryingsAccessProbe'
+}
+
+tasks.register('terrainWorkerLifetimeProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.TerrainWorkerLifetimeProbe'
+    maxHeapSize = '256m'
+}
+
+tasks.register('irisPostChainRtProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.test.IrisPostChainRtProbe'
+}
+
+tasks.register('irisClearBridgeProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.core.test.IrisClearBridgeProbe'
+}
+
+tasks.register('glslVolumeProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.antimony.gl.glsl.GlslVolumeProbe'
+    args = ["$captures/runtime-terrain-source"]
+}
+
+tasks.register('smoke', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.irisgl.test.SoftwareSmokeTest'
+    args = ["${layout.buildDirectory.get().asFile}/smoke.png"]
+    systemProperty 'irisgl.debug.raster', 'true'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+jar {
+    manifest {
+        attributes(
+            'Implementation-Title': 'Antimony',
+            'Implementation-Version': project.version,
+            'MixinConfigs': 'antimony.mixins.json,antimony.gl.mixins.json'
+        )
+    }
+}
+
+// 可选：装进你自己的测试实例。默认关闭，只有显式给出路径才生效，
+// 避免仓库里出现任何本机绝对路径。
+//   gradle jar -PinstanceModsDir="D:/mc/.minecraft/versions/<版本>/mods"
+tasks.register('deployToInstance', Copy) {
+    def targetDir = providers.gradleProperty('instanceModsDir').map { file(it) }
+    onlyIf { targetDir.present }
+    dependsOn tasks.named('jar')
+    doFirst {
+        def dir = targetDir.get()
+        dir.mkdirs()
+        dir.listFiles()?.findAll { it.name ==~ /antimony-.*\.jar/ }?.each { it.delete() }
+    }
+    from tasks.named('jar').flatMap { it.archiveFile }
+    into { targetDir.get() }
+}

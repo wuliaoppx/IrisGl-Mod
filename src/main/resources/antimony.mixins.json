@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.antimony.core.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BufferUploaderMixin",
+    "GameRendererMixin",
+    "GameRendererBlurMixin",
+    "RenderSystemMixin",
+    "GlStateManagerMixin",
+    "GlShaderCaptureMixin",
+    "IrisCpuPresetMixin",
+    "XaeroCpuMinimapMixin",
+    "XaeroCpuProcessorMixin",
+    "XaeroCpuTextureMixin",
+    "XaeroCpuWriterMixin",
+    "LevelRendererMixin",
+    "ClientChunkCacheMixin",
+    "DebugScreenOverlayMixin",
+    "ScreenshotMixin",
+    "TextureAtlasAnimationMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
