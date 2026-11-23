@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/icon.png" width="150" alt="Antimony 图标">
+</p>
+
 # Antimony（锑）
 
 **用纯 CPU 软件光栅器接管 Minecraft 的整条渲染管线，并把 Iris 光影包在 CPU 上编译、执行。**
