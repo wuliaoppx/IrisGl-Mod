@@ -55,7 +55,9 @@ public final class IrisTerrainVertex {
             var capture = IrisTerrainSources.captureTerrainCurrent().orElseThrow(
                 () -> new IllegalStateException("No identified pack terrain source"));
             var sources = new java.util.ArrayList<>(capture.sources());
-            IrisTerrainSources.captureBlockEntitiesCurrent().ifPresent(blocks -> sources.addAll(blocks.sources()));
+            // 方块实体通路默认关闭（未实机验证）；关闭时不额外编译这些程序。
+            if (dev.antimony.AntimonyMod.flag("antimony.blockentity.shader"))
+                IrisTerrainSources.captureBlockEntitiesCurrent().ifPresent(blocks -> sources.addAll(blocks.sources()));
             for (IrisTerrainSources.Source source : sources) {
                 var identity = source.identity();
                 LOG.info("[Antimony] terrain source draw directives key={} contract={} (physical FBO/RT generation not activated)", identity.shaderKey(),source.drawDirectives());

@@ -41,12 +41,22 @@ public final class IrisGlBufferSource extends MultiBufferSource.BufferSource {
     private Integer blockEntityMaterial;
     private IrisGlTexture blockOverlay;
 
+    /**
+     * 方块实体是否改走光影包着色器通路。该通路尚未实机验证，默认关闭；
+     * 开启方式：-Dantimony.blockentity.shader=on。关闭时行为与旧构建完全一致。
+     */
+    private static final boolean BLOCK_ENTITY_SHADER =
+            dev.antimony.AntimonyMod.flag("antimony.blockentity.shader");
+
     public void beginBlockEntity(int material) {
+        if (!BLOCK_ENTITY_SHADER) return;
         if (blockEntityMaterial != null || !buffers.isEmpty()) throw new IllegalStateException("Overlapping block-entity batch");
         blockEntityMaterial = material;
         if (dev.antimony.gl.glsl.IrisPostChain.blockEntityFrameActive()) blockOverlay = BlockEntityShaderInputs.overlayTexture();
     }
     public void endBlockEntity() {
+        // 未启用时不能提前 flush，否则每个方块实体都会切断一次合批。
+        if (blockEntityMaterial == null) return;
         try { endBatch(); }
         finally { blockEntityMaterial = null; blockOverlay = null; dev.antimony.gl.glsl.IrisTerrainVertex.endScope(); }
     }
